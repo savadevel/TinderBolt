@@ -2,4 +2,5 @@
 log
 *.patch
 config
-
+gpt_token.txt
+tlg_token.txt
