@@ -7,16 +7,20 @@ from util import *
 
 
 async def cmd_debug(update, context):
-    if dialog.node:
-        await send_text(update, context, dialog.node)
+    if dialog.mode is not None and len(dialog.mode) > 0:
+        await send_text(update, context, f"dialog.mode = {dialog.mode}")
     if len(dialog.list) > 0:
-        await send_text(update, context, "\n\n".join(dialog.list))
+        await send_text(update, context, "dialog.list = " + "\n\n".join(dialog.list))
+    if dialog.count > 0:
+        await send_text(update, context, f"dialog.count = {dialog.count}")
+    if bool(dialog.user):
+        await send_text(update, context, "dialog.user = " + dialog_user_info_to_str(dialog.user))
 
 
 async def cmd_start(update, context):
-    dialog.node = "main"
-    text = load_message("main")
-    await send_photo(update, context, "main")
+    dialog.mode = "main"
+    text = load_message(dialog.mode)
+    await send_photo(update, context, dialog.mode)
     await send_text(update, context, text)
 
     await show_main_menu(update, context, {  # Текст перед кнопкой
@@ -30,23 +34,23 @@ async def cmd_start(update, context):
 
 
 async def cmd_gpt(update, context):
-    dialog.node = "gpt"
-    text = load_message("gpt")
+    dialog.mode = "gpt"
+    text = load_message(dialog.mode)
     await send_text(update, context, text)
-    await send_photo(update, context, "gpt")
+    await send_photo(update, context, dialog.mode)
 
 
 async def dialog_gpt(update, context):
     text = update.message.text
-    prompt = load_prompt("gpt")
+    prompt = load_prompt(dialog.mode)
     answer = await chatgpt.send_question(prompt, text)
     await send_text(update, context, answer)
 
 
 async def cmd_date(update, context):
-    dialog.node = "date"
-    text = load_message("date")
-    await send_photo(update, context, "date")
+    dialog.mode = "date"
+    text = load_message(dialog.mode)
+    await send_photo(update, context, dialog.mode)
     await send_text_buttons(update, context, text, {
         "date_grande": "1. Ариана Гранде 🔥  (сложность 5/10)",
         "date_robbie": "2. Марго Робби 🔥🔥  (сложность 7/10)",
@@ -74,9 +78,9 @@ async def button_date(update, context):
 
 
 async def cmd_message(update, context):
-    dialog.node = "message"
-    text = load_message("message")
-    await send_photo(update, context, "message")
+    dialog.mode = "message"
+    text = load_message(dialog.mode)
+    await send_photo(update, context, dialog.mode)
     await send_text_buttons(update, context, text, {
         "message_next": "Следующее сообщение",
         "message_date": "Пригласить на свидание"
@@ -100,13 +104,95 @@ async def button_message(update, context):
     await my_message.edit_text(answer)
 
 
+async def cmd_profile(update, context):
+    dialog.mode = "profile"
+    text = load_message(dialog.mode)
+    await send_photo(update, context, dialog.mode)
+    await send_text(update, context, text)
+
+    dialog.count = 0
+    dialog.user.clear()
+
+    await send_text(update, context, "Сколько Вам лет?")
+
+
+async def dialog_profile(update, context):
+    text = update.message.text
+    dialog.count += 1
+
+    if dialog.count == 1:
+        dialog.user["age"] = text
+        await send_text(update, context, "Кем Вы работаете?")
+    elif dialog.count == 2:
+        dialog.user["occuration"] = text
+        await send_text(update, context, "У Вас есть хобби?")
+    elif dialog.count == 3:
+        dialog.user["hobby"] = text
+        await send_text(update, context, "Что Вам НЕ нравится в людях?")
+    elif dialog.count == 4:
+        dialog.user["annoys"] = text
+        await send_text(update, context, "Цель знакомства?")
+    elif dialog.count == 5:
+        dialog.user["goals"] = text
+
+        prompt = load_prompt(dialog.mode)
+        user_info = dialog_user_info_to_str(dialog.user)
+
+        my_message = await send_text(update, context, "Подготовка ответа...")
+        answer = await chatgpt.send_question(prompt, user_info)
+        await my_message.edit_text(answer)
+
+
+async def cmd_opener(update, context):
+    dialog.mode = "opener"
+    text = load_message(dialog.mode)
+    await send_photo(update, context, dialog.mode)
+    await send_text(update, context, text)
+
+    dialog.count = 0
+    dialog.user.clear()
+
+    await send_text(update, context, "Имя девушки?")
+
+
+async def dialog_opener(update, context):
+    text = update.message.text
+    dialog.count += 1
+
+    if dialog.count == 1:
+        dialog.user["name"] = text
+        await send_text(update, context, "Сколько ей лет?")
+    elif dialog.count == 2:
+        dialog.user["age"] = text
+        await send_text(update, context, "Оцените ее внешность: 1-10 баллов?")
+    elif dialog.count == 3:
+        dialog.user["handsome"] = text
+        await send_text(update, context, "Кем она работает?")
+    elif dialog.count == 4:
+        dialog.user["occupation"] = text
+        await send_text(update, context, "Цель знакомства?")
+    elif dialog.count == 5:
+        dialog.user["goals"] = text
+
+        prompt = load_prompt(dialog.mode)
+        user_info = dialog_user_info_to_str(dialog.user)
+
+        my_message = await send_text(update, context, "Подготовка ответа...")
+        answer = await chatgpt.send_question(prompt, user_info)
+        await my_message.edit_text(answer)
+
+
 async def hello(update, context):
-    if dialog.node == 'gpt':
+    if dialog.mode == 'gpt':
         await dialog_gpt(update, context)
-    elif dialog.node == 'date':
+    elif dialog.mode == 'date':
         await dialog_date(update, context)
-    elif dialog.node == 'message':
+    elif dialog.mode == 'message':
         await dialog_message(update, context)
+    elif dialog.mode == 'profile':
+        await dialog_profile(update, context)
+    elif dialog.mode == 'opener':
+        await dialog_opener(update, context)
     else:
         await send_text(update, context, "_Привет!_")
         await send_text(update, context, "Вы написали " + update.message.text)
@@ -124,11 +210,14 @@ async def button_hello(update, context):
     else:
         await send_text(update, context, "Вы нажали на кнопку стоп")
 
+
 load_dotenv()
 
 dialog = Dialog()
-dialog.node = None
+dialog.mode = None
 dialog.list = []
+dialog.count = 0
+dialog.user = {}
 
 chatgpt = ChatGptService(token=os.getenv('OPEN_AI_TOKEN'))
 app = ApplicationBuilder().token(os.getenv('TLG_BOT_TOKEN')).build()
@@ -138,6 +227,8 @@ app.add_handler(CommandHandler("start", cmd_start))
 app.add_handler(CommandHandler("gpt", cmd_gpt))
 app.add_handler(CommandHandler("date", cmd_date))
 app.add_handler(CommandHandler("message", cmd_message))
+app.add_handler(CommandHandler("profile", cmd_profile))
+app.add_handler(CommandHandler("opener", cmd_opener))
 
 app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, hello))  # отключаем команды
 
