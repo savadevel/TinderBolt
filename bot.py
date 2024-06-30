@@ -1,3 +1,5 @@
+from dotenv import load_dotenv
+
 from telegram.ext import ApplicationBuilder, MessageHandler, filters, CallbackQueryHandler, CommandHandler
 
 from gpt import *
@@ -122,16 +124,14 @@ async def button_hello(update, context):
     else:
         await send_text(update, context, "Вы нажали на кнопку стоп")
 
+load_dotenv()
 
 dialog = Dialog()
 dialog.node = None
 dialog.list = []
 
-gpt_token = open("gpt_token.txt", "r").read()
-chatgpt = ChatGptService(token=gpt_token)
-
-tlg_token = open("tlg_token.txt", "r").read()
-app = ApplicationBuilder().token(tlg_token).build()
+chatgpt = ChatGptService(token=os.getenv('OPEN_AI_TOKEN'))
+app = ApplicationBuilder().token(os.getenv('TLG_BOT_TOKEN')).build()
 
 app.add_handler(CommandHandler("debug", cmd_debug))
 app.add_handler(CommandHandler("start", cmd_start))
