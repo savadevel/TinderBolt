@@ -194,13 +194,8 @@ async def hello(update, context):
     elif dialog.mode == 'opener':
         await dialog_opener(update, context)
     else:
-        await send_text(update, context, "_Привет!_")
-        await send_text(update, context, "Вы написали " + update.message.text)
-        await send_text_buttons(update, context, "Выберите режим работы", {  # Текст перед кнопкой
-            "btn_start": " Старт ",  # Текст и команда кнопки "Старт"
-            "btn_stop": " Стоп "  # Текст и команда кнопки "Стоп"
-        })
         await send_photo(update, context, "avatar_main")
+        await send_text(update, context, "_Привет!_\nВыбери команду /start для начала...")
 
 
 async def button_hello(update, context):
